@@ -1,4 +1,6 @@
-function TaskCard({ task }) {
+function TaskCard({ task, onDelete, onToggle }) {
+
+  
   return (
     <div className="task-card">
       <h3>{task.title}</h3>
@@ -9,10 +11,20 @@ function TaskCard({ task }) {
       </p>
 
       <div className="task-buttons">
-        <button>Edit</button>
-        <button>Delete</button>
+        <button type="button" onClick={() =>{
+          onToggle(task)
+        }}>Toggle Status</button>
+        <button
+          type="button"
+          onClick={() => {
+            onDelete(task._id);
+          }}
+        >
+          Delete
+        </button>
       </div>
     </div>
+    
   );
 }
 
