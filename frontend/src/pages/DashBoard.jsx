@@ -1,20 +1,23 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import TaskCard from "../components/TaskCard";
 import TaskForm from "../components/TaskForm";
-import { useEffect, useState } from "react";
+import Navbar from "../components/Navbar";
 import { updateTask, deleteTask, getTasks } from "../api/taskApi";
 
 function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
+  const userEmail = localStorage.getItem("userEmail") || "User";
 
   const fetchTasks = async () => {
     setLoading(true);
     setError(null);
+
     try {
       const data = await getTasks();
-      console.log("Dashboard fetched tasks:", data);
-
       const tasksFromApi = data.tasks ?? data?.data?.tasks ?? [];
       setTasks(tasksFromApi);
     } catch (error) {
@@ -50,37 +53,79 @@ function Dashboard() {
       await updateTask(task._id, {
         completed: !task.completed,
       });
-      fetchTasks();
+      await fetchTasks();
     } catch (error) {
       console.log(error);
     }
   };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userEmail");
+    navigate("/login");
+  };
+
   useEffect(() => {
     fetchTasks();
   }, []);
 
+  const completedCount = tasks.filter((task) => task.completed).length;
+  const pendingCount = tasks.length - completedCount;
+
   return (
     <div className="dashboard">
-      <h1>Dashboard</h1>
+      <Navbar userLabel={userEmail} onLogout={handleLogout} />
 
-      <TaskForm onTaskAdded={fetchTasks} />
+      <section className="dashboard-intro">
+        <div>
+          <p className="eyebrow">Welcome back</p>
+          <h1>Your Task Dashboard</h1>
+          <p className="dashboard-copy">
+            Manage your daily tasks, update status quickly, and stay focused on what matters.
+          </p>
+        </div>
 
-      {loading && <p>Loading tasks...</p>}
-      {error && <p className="error">{error}</p>}
-      {!loading && tasks.length === 0 && (
-        <p>No tasks found. Add one to get started.</p>
-      )}
+        <div className="stats-grid">
+          <div className="stat-card">
+            <span>Total tasks</span>
+            <strong>{tasks.length}</strong>
+          </div>
+          <div className="stat-card">
+            <span>Completed</span>
+            <strong>{completedCount}</strong>
+          </div>
+          <div className="stat-card">
+            <span>Pending</span>
+            <strong>{pendingCount}</strong>
+          </div>
+        </div>
+      </section>
 
-      <div className="tasks-container">
-        {tasks.map((task) => (
-          <TaskCard
-            key={task._id}
-            task={task}
-            onDelete={handleDelete}
-            onToggle={handleToggle}
-          />
-        ))}
-      </div>
+      <section className="task-panel">
+        <div className="panel-header">
+          <h2>Tasks</h2>
+          <p>Track your active tasks and mark them as complete at any time.</p>
+        </div>
+
+        <TaskForm onTaskAdded={fetchTasks} />
+
+        {loading && <p className="loading-text">Loading tasks...</p>}
+        {error && <p className="error">{error}</p>}
+        {!loading && tasks.length === 0 && (
+          <p className="empty-state">No tasks found. Add one to get started.</p>
+        )}
+
+        <div className="tasks-container">
+          {tasks.map((task) => (
+            <TaskCard
+              key={task._id}
+              task={task}
+              onDelete={handleDelete}
+              onToggle={handleToggle}
+            />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

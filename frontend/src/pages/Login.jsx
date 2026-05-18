@@ -21,6 +21,7 @@ function Login() {
     try {
       const data = await loginUser(formData);
       localStorage.setItem("token", data.token);
+      localStorage.setItem("userEmail", formData.email);
       console.log(data);
       alert("Login successful");
       navigate("/dashboard");
