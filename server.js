@@ -9,16 +9,21 @@ const cors = require('cors');
 
 const app = express();
 
-app.use(cors());
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+};
+
+app.use(cors(corsOptions));
 connectDB();
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use(errorHandler)
 
-app.listen(process.env.PORT, () =>{
-    console.log("Server runneing");
-    
-})
-
-//finsihed testing... now registration and JWT
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () =>{
+    console.log(`Server running on port ${PORT}`);
+});
