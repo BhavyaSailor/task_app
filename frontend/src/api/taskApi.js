@@ -2,7 +2,7 @@ import axios from "axios";
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 const API = axios.create({
-  baseURL: `${API_BASE}/api`
+  baseURL: `${API_BASE}/api/v1`
 });
 
 const authHeader = () => {
@@ -40,4 +40,17 @@ export const updateTask = async(taskId, updatedData) => {
   return response.data;
 }
 
+export const getAllTasksAdmin = async () => {
+  const response = await API.get("/tasks/allTasks", {
+    headers: authHeader(),
+  });
+  return response.data;
+};
+
+export const getAllUsers = async () => {
+  const response = await API.get("/tasks/allUsers", {
+    headers: authHeader(),
+  });
+  return response.data;
+};
 
