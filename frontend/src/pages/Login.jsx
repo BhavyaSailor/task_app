@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../api/authApi";
+import { getRoleFromToken } from "../utils/jwt";
 
 function Login() {
   const navigate = useNavigate();
@@ -22,6 +23,11 @@ function Login() {
       const data = await loginUser(formData);
       localStorage.setItem("token", data.token);
       localStorage.setItem("userEmail", formData.email);
+
+      // extract role from token and save for UI decisions
+      const role = getRoleFromToken(data.token);
+      if (role) localStorage.setItem("userRole", role);
+
       console.log(data);
       alert("Login successful");
       navigate("/dashboard");
