@@ -1,56 +1,8 @@
-import axios from "axios";
-const API_BASE = import.meta.env.VITE_API_BASE;
+import { client } from "./client";
 
-const API = axios.create({
-  baseURL: `${API_BASE}/api/v1`
-});
-
-const authHeader = () => {
-  const token = localStorage.getItem("token");
-  return {
-    Authorization: `Bearer ${token}`,
-  };
-};
-
-export const getTasks = async () => {
-  const response = await API.get("/tasks", {
-    headers: authHeader(),
-  });
-  return response.data;
-};
-
-export const createTask = async (taskData) => {
-  const response = await API.post("/tasks", taskData, {
-    headers: authHeader(),
-  });
-  return response.data;
-};
-
-export const deleteTask = async(taskId) => {
-  const response = await API.delete(`/tasks/${taskId}`, {
-    headers : authHeader(),
-  });
-  return response.data;
-}
-
-export const updateTask = async(taskId, updatedData) => {
-  const response = await API.put(`/tasks/${taskId}`, updatedData,  {
-    headers : authHeader(),
-  });
-  return response.data;
-}
-
-export const getAllTasksAdmin = async () => {
-  const response = await API.get("/tasks/allTasks", {
-    headers: authHeader(),
-  });
-  return response.data;
-};
-
-export const getAllUsers = async () => {
-  const response = await API.get("/tasks/allUsers", {
-    headers: authHeader(),
-  });
-  return response.data;
-};
-
+export const getTasks = async (params) => (await client.get("/tasks", { params })).data;
+export const createTask = async (data) => (await client.post("/tasks", data)).data;
+export const deleteTask = async (id) => (await client.delete(`/tasks/${id}`)).data;
+export const updateTask = async (id, data) => (await client.put(`/tasks/${id}`, data)).data;
+export const getAllTasksAdmin = async () => (await client.get("/tasks/allTasks")).data;
+export const getAllUsers = async () => (await client.get("/tasks/allUsers")).data;

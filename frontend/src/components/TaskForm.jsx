@@ -1,40 +1,24 @@
 import { useState } from "react";
-import { createTask } from "../api/taskApi";
 
-function TaskForm({ onTaskAdded }) {
-  const [title, setTitle] = useState("");
+export default function TaskForm({ onAdd, inputRef }) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-
-    if (!title.trim()) {
-      return;
-    }
-
-    try {
-      await createTask({ title: title.trim() });
-      setTitle("");
-      if (onTaskAdded) {
-        onTaskAdded();
-      }
-    } catch (error) {
-      console.error("Task creation failed", error);
-      alert("Unable to add task. Please try again.");
-    }
+    const v = text.trim();
+    if (!v) return;
+    setBusy(true);
+    if (await onAdd(v)) setText("");
+    setBusy(false);
   };
 
   return (
-    <form className="task-form" onSubmit={handleSubmit}>
-      <input
-        type="text"
-        placeholder="Enter task"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-
-      <button type="submit">Add Task</button>
+    <form className="add" onSubmit={submit}>
+      <label className="sr" htmlFor="new-task">New task</label>
+      <input id="new-task" ref={inputRef} value={text} maxLength={200}
+        onChange={(e) => setText(e.target.value)} placeholder="What needs doing?" />
+      <button className="btn pri" disabled={busy || !text.trim()}>Add task</button>
     </form>
   );
 }
-
-export default TaskForm;

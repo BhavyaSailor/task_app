@@ -1,68 +1,51 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import Layout from "../layouts/MainLayout";
 import { registerUser } from "../api/authApi";
-import { useNavigate } from "react-router-dom";
+import { errMsg } from "../api/client";
+import { useToast } from "../components/Toast";
 
-function Register() {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
+export default function Register() {
+  const nav = useNavigate();
+  const toast = useToast();
+  const [f, setF] = useState({ name: "", email: "", password: "" });
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [show, setShow] = useState(false);
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
+    if (!f.name.trim() || !f.email) return setErr("Enter your name and email.");
+    if (f.password.length < 6) return setErr("Use a password with at least 6 characters.");
+    setErr("");
+    setBusy(true);
     try {
-      const data = await registerUser(formData);
-      console.log(data);
-      alert("Registration successful");
-      navigate("/login");
-
-    } catch (error) {
-      console.log(error);
-      console.log(error.response);
-      console.log(error.response.data);
-      alert("Registration failed");
-    }
+      await registerUser(f);
+      toast("Account created. Log in to continue.");
+      nav("/login");
+    } catch (x) {
+      setErr(errMsg(x, "Could not create the account. Check your connection and try again."));
+    } finally { setBusy(false); }
   };
 
   return (
-    <div className="form-container">
-      <h2>Register</h2>
-
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="name"
-          placeholder="Enter name"
-          onChange={handleChange}
-        />
-
-        <input
-          type="email"
-          name="email"
-          placeholder="Enter email"
-          onChange={handleChange}
-        />
-
-        <input
-          type="password"
-          name="password"
-          placeholder="Enter password"
-          onChange={handleChange}
-        />
-
-        <button type="submit">Register</button>
-      </form>
-    </div>
+    <Layout title="Create account">
+      <div className="card">
+        <h2>Create account</h2>
+        <form onSubmit={submit} noValidate>
+          <div><label htmlFor="name">Name</label><input id="name" autoComplete="name" value={f.name} onChange={set("name")} /></div>
+          <div><label htmlFor="email">Email</label><input id="email" type="email" autoComplete="email" value={f.email} onChange={set("email")} /></div>
+          <div><label htmlFor="pw">Password</label>
+            <div className="pw">
+              <input id="pw" type={show ? "text" : "password"} autoComplete="new-password" value={f.password} onChange={set("password")} />
+              <button type="button" className="btn" onClick={() => setShow(!show)}>{show ? "Hide" : "Show"}</button>
+            </div></div>
+          {err && <p className="err" role="alert">{err}</p>}
+          <button className="btn pri" disabled={busy}>{busy ? "Creating account…" : "Create account"}</button>
+        </form>
+        <p className="alt">Already registered? <Link to="/login">Log in</Link></p>
+      </div>
+    </Layout>
   );
 }
-
-export default Register;

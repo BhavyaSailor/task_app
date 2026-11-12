@@ -1,85 +1,71 @@
-import { useEffect, useState } from "react";
-import Navbar from "../components/Navbar";
+import { useCallback, useEffect, useState } from "react";
+import Layout from "../layouts/MainLayout";
 import { getAllUsers } from "../api/taskApi";
 import { updateUserRole } from "../api/authApi";
+import { errMsg } from "../api/client";
+import { parseJwt } from "../utils/jwt";
+import { useToast } from "../components/Toast";
 
-function AdminUsers() {
+export default function AdminUsers() {
+  const toast = useToast();
+  const me = parseJwt(localStorage.getItem("token"))?.id;
   const [users, setUsers] = useState([]);
+  const [q, setQ] = useState("");
+  const [ask, setAsk] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [err, setErr] = useState("");
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const data = await getAllUsers();
-      setUsers(data.users || data?.data?.users || []);
-    } catch (err) {
-      console.error(err);
-      setError("Unable to load users");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleToggleRole = async (user) => {
-    const newRole = user.role === "admin" ? "user" : "admin";
-    try {
-      await updateUserRole(user._id, newRole);
-      await fetchUsers();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update role");
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
+  const load = useCallback(async () => {
+    try { setUsers((await getAllUsers()).users || []); }
+    catch (e) { setErr(errMsg(e, "Could not load users.")); }
+    finally { setLoading(false); }
   }, []);
+  useEffect(() => { load(); }, [load]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userRole");
-    window.location.href = "/login";
+  const change = async (u) => {
+    const role = u.role === "admin" ? "user" : "admin";
+    try { await updateUserRole(u._id, role); toast(`${u.name} is now ${role === "admin" ? "an admin" : "a regular user"}`); setAsk(null); load(); }
+    catch (e) { toast(errMsg(e, "Could not change the role."), "error"); }
   };
 
+  const s = q.trim().toLowerCase();
+  const shown = users.filter((u) => !s || u.name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s));
   return (
-    <div>
-      <Navbar userLabel={localStorage.getItem("userEmail") || "Admin"} onLogout={handleLogout} />
-
-      <main className="admin-users">
+    <Layout title="Users">
+      <div className="head">
         <h1>Users</h1>
-        {loading && <p>Loading...</p>}
-        {error && <p className="error">{error}</p>}
-        {!loading && users.length === 0 && <p>No users found.</p>}
-
-        <table className="users-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+        <div>
+          <label className="sr" htmlFor="uq">Search users</label>
+          <input id="uq" type="search" placeholder="Search name or email" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+      </div>
+      {err && <p className="err" role="alert">{err}</p>}
+      {loading && <p className="empty">Loading users…</p>}
+      {!loading && !err && !shown.length && <p className="empty">No users found.</p>}
+      {shown.length > 0 && (
+        <table className="tbl">
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Action</th></tr></thead>
           <tbody>
-            {users.map((u) => (
+            {shown.map((u) => (
               <tr key={u._id}>
-                <td>{u.name}</td>
-                <td>{u.email}</td>
-                <td>{u.role}</td>
-                <td>
-                  <button onClick={() => handleToggleRole(u)}>
-                    {u.role === "admin" ? "Demote to user" : "Promote to admin"}
-                  </button>
+                <td data-label="Name">{u.name}</td>
+                <td data-label="Email">{u.email}</td>
+                <td data-label="Role"><span className="badge">{u.role}</span></td>
+                <td data-label="Action">
+                  {u._id === me ? <span className="mute">You</span> : ask === u._id ? (
+                    <span className="acts">
+                      <button className="btn sm bad" onClick={() => change(u)}>Confirm</button>
+                      <button className="btn sm" onClick={() => setAsk(null)}>Cancel</button>
+                    </span>
+                  ) : (
+                    <button className="btn sm" onClick={() => setAsk(u._id)}>{u.role === "admin" ? "Make regular user" : "Make admin"}</button>
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </main>
-    </div>
+      )}
+    </Layout>
   );
 }
-
-export default AdminUsers;

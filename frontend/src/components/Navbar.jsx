@@ -1,63 +1,46 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { clearSession } from "../api/client";
 
-function Navbar({ userLabel = "User", onLogout }) {
+const link = (to, text) => (
+  <NavLink to={to} className={({ isActive }) => (isActive ? "active" : "")}>{text}</NavLink>
+);
+
+export default function Navbar() {
+  const nav = useNavigate();
   const [open, setOpen] = useState(false);
-  const initials = userLabel.trim().charAt(0).toUpperCase() || "U";
-  const role = localStorage.getItem("userRole") || "user";
+  const [dark, setDark] = useState(document.documentElement.dataset.theme === "dark");
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("userRole");
+  const email = localStorage.getItem("userEmail");
+
+  const flip = () => {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.dataset.theme = next ? "dark" : "light";
+    try { localStorage.setItem("theme", next ? "dark" : "light"); } catch { /* ignore */ }
+  };
+  const logout = () => { clearSession(); nav("/login"); };
 
   return (
-    <header className="app-navbar">
-      <div className="brand">
-        <Link to="/dashboard" className="brand-link">
-          <span className="brand-mark">T</span>
-          <div>
-            <p className="brand-name">Task Manager</p>
-            <p className="brand-subtitle">Smart task tracking</p>
-          </div>
-        </Link>
-      </div>
-
-      <nav className="main-nav">
-       
-
-        <Link to="/dashboard" className="nav-link">Dashboard   </Link>
-        
-        {role === "admin" && (
+    <header className="bar">
+      <Link className="logo" to={token ? "/dashboard" : "/"}><i>✓</i>Taskly</Link>
+      <button className="btn sm menu" aria-expanded={open} aria-controls="nav" onClick={() => setOpen(!open)}>
+        {open ? "Close" : "Menu"}
+      </button>
+      <nav id="nav" className={`nav${open ? " open" : ""}`} onClick={() => setOpen(false)}>
+        {token ? (
           <>
-            <Link to="/admin/tasks" className="nav-link">All-Tasks   </Link>
-            <Link to="/admin/users" className="nav-link">Users</Link>
+            {link("/dashboard", "Tasks")}
+            {role === "admin" && <>{link("/admin/tasks", "All tasks")}{link("/admin/users", "Users")}</>}
+            <span className="who">{email}</span>
+            <button className="btn sm" onClick={logout}>Log out</button>
           </>
+        ) : (
+          <>{link("/login", "Log in")}{link("/register", "Create account")}</>
         )}
+        <button className="btn sm" onClick={flip} aria-pressed={dark}>{dark ? "Light mode" : "Dark mode"}</button>
       </nav>
-
-      <div className="profile-menu">
-        <button
-          type="button"
-          className="profile-button"
-          onClick={() => setOpen((current) => !current)}
-        >
-          <span className="profile-avatar">{initials}</span>
-          <span className="profile-user">{userLabel}</span>
-        </button>
-
-        {open && (
-          <div className="profile-dropdown">
-            <div className="profile-summary">
-              <span className="profile-avatar profile-avatar--small">{initials}</span>
-              <div>
-                <p>{userLabel}</p>
-                <p className="profile-status">{role === "admin" ? "Admin" : "Logged in"}</p>
-              </div>
-            </div>
-            <button className="logout-button" type="button" onClick={onLogout}>
-              Log out
-            </button>
-          </div>
-        )}
-      </div>
     </header>
   );
 }
-
-export default Navbar;
