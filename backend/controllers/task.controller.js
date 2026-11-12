@@ -1,4 +1,5 @@
 const Task = require('../models/task.models');
+const User = require('../models/user.models');
 
 const createTask = async (req, res, next)=>{
     try{
@@ -123,9 +124,35 @@ const deleteTask = async (req, res, next)=>{
     }
 }
 
+const getAllTasks = async (req, res, next) => {
+  try {
+    const tasks = await Task.find().select("-__v").sort("-createdAt");
+    res.status(200).json({
+      success: true,
+      tasks
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getAllUsers = async (req, res, next) => {
+  try {
+    const users = await User.find().select("-password -__v");
+    res.status(200).json({
+      success: true,
+      users
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
     createTask,
     getTasks,
     updateTask,
-    deleteTask
+    deleteTask,
+    getAllTasks,
+    getAllUsers
 };
